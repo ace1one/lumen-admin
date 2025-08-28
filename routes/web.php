@@ -27,6 +27,10 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     $router->group(['middleware' => 'auth'], function () use ($router) {
         $router->post('logout', 'AuthController@logout');
         $router->get('profile', 'AuthController@profile');
+        
+        //menus/submenus
+        $router->post('menus', 'MenuController@createMenu');
+        $router->get('menus', 'MenuController@getMenus');
     });
 });
 
