@@ -161,5 +161,17 @@ class MenuController extends Controller
     return ApiResponse::success($menu, 'Menu and submenus updated successfully');
 }
 
+ public function deleteMenu($id)
+{
+    $menu = Menu::find($id);
+    if (!$menu) {
+        return ApiResponse::error('Menu not found', 404);
+    }
 
+    // This will also delete associated sub-menus due to foreign key constraints with cascade on delete
+    $menu->delete();
+
+    return ApiResponse::success(null, 'Menu and its sub-menus deleted successfully');
+
+}
 }
