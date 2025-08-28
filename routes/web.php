@@ -31,6 +31,7 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         //menus/submenus
         $router->post('menus', 'MenuController@createMenu');
         $router->get('menus', 'MenuController@getMenus');
+        $router->post('menus/edit/{id}', 'MenuController@updateMenu');
     });
 });
 

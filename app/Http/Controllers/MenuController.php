@@ -89,5 +89,77 @@ class MenuController extends Controller
         return ApiResponse::success($subMenu, 'Sub-menu created successfully');
     }
 
+    public function getSubMenus($menuId)
+    {
+        $menu = Menu::with('subMenus')->find($menuId);
+        if (!$menu) {
+            return ApiResponse::error('Menu not found', 404);
+        }
+
+        return ApiResponse::success($menu->subMenus, 'Sub-menus retrieved successfully');
+    }
+
+    public function updateMenu(Request $request, $id)
+{
+    // Find the menu
+    $menu = Menu::with('subMenus')->findOrFail($id);
+
+    // Validate input
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|unique:menus,name,' . $id,
+        'description' => 'nullable|string',
+        'subMenus' => 'nullable|array',
+        'subMenus.*.id' => 'nullable|integer|exists:sub_menus,id',
+        'subMenus.*.name' => 'required|string',
+        'subMenus.*.description' => 'nullable|string',
+    ]);
+
+    if ($validator->fails()) {
+        return ApiResponse::error('Validation error', 422, $validator->errors());
+    }
+
+    // Update main menu
+    $menu->update([
+        'name' => $request->name,
+        'description' => $request->description,
+    ]);
+
+    if ($request->has('subMenus')) {
+        $existingIds = $menu->subMenus->pluck('id')->toArray();
+        $submittedIds = collect($request->subMenus)->pluck('id')->filter()->toArray();
+
+        // Delete submenus that are removed
+        $toDelete = array_diff($existingIds, $submittedIds);
+        if (!empty($toDelete)) {
+            SubMenu::destroy($toDelete);
+        }
+
+        // Create or update submenus
+        foreach ($request->subMenus as $sub) {
+            if (isset($sub['id'])) {
+                // Update existing submenu
+                $menu->subMenus()->where('id', $sub['id'])->update([
+                    'name' => $sub['name'],
+                    'description' => $sub['description'] ?? null,
+                ]);
+            } else {
+                // Create new submenu
+                $menu->subMenus()->create([
+                    'name' => $sub['name'],
+                    'description' => $sub['description'] ?? null,
+                ]);
+            }
+        }
+    } else {
+        // If no subMenus in request, delete all existing submenus
+        $menu->subMenus()->delete();
+    }
+
+    // Load submenus for response
+    $menu->load('subMenus');
+
+    return ApiResponse::success($menu, 'Menu and submenus updated successfully');
+}
+
 
 }
